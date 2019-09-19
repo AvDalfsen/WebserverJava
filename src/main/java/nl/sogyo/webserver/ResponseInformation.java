@@ -10,7 +10,7 @@ public class ResponseInformation implements Response {
     private String content;
 
     ResponseInformation(String statusCode, String content) {
-        httpStatus = HttpStatusCode.valueOf(statusCode);
+        this.httpStatus = HttpStatusCode.valueOf(statusCode);
         this.content = content;
     }
 

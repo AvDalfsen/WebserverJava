@@ -1,6 +1,7 @@
 package nl.sogyo.webserver;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /// Representation of the incoming HTTP request.
@@ -25,10 +26,10 @@ public interface Request {
 
     /// Retrieves the URL parameters that were present in
     /// the requested URL.
-    List<String> getParameterNames();
+    Map<String, String> getParameterInformation();
 
     /// Retrieves the URL parameter value corresponding to
     /// the name. If no parameter exists with the name,
     /// it returns null.
-    String getParameterValue(String name);
+    //String getParameterValue(String name);
 }

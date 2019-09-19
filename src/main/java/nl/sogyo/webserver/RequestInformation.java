@@ -7,6 +7,7 @@ import java.util.*;
 public class RequestInformation implements Request {
 
     private ArrayList<String> readerList;
+    private Map<String, String> parameterList = new LinkedHashMap<String, String>();;
 
     RequestInformation(ArrayList<String> readerList) {
         this.readerList = readerList;
@@ -40,11 +41,26 @@ public class RequestInformation implements Request {
         return headerParameterValues;
     }
 
-    public List<String> getParameterNames() {
-        return new ArrayList<String>();
-    }
-
-    public String getParameterValue(String name) {
-        return "henk2";
+    public Map<String, String> getParameterInformation() {
+        if(this.getHTTPMethod().toString().equals("GET") && readerList.get(0).contains("?")){
+            String[] splitLine = readerList.get(0).split(" ");
+            String[] resourceParameterSplit = splitLine[1].split("\\?");
+            String[] parameterSplit = resourceParameterSplit[1].split("&");
+            for(String parameter : parameterSplit){
+                String[] headerValueSplit = parameter.split("=");
+                System.out.println(Arrays.toString(headerValueSplit));
+                this.parameterList.put(headerValueSplit[0], headerValueSplit[1]);
+            }
+        } else if(this.getHTTPMethod().toString().equals("POST")){
+            String splitLine = readerList.get(readerList.size() - 1);
+            System.out.println(splitLine);
+            String[] parameterSplit = splitLine.split("&");
+            for(String parameter : parameterSplit){
+                String[] headerValueSplit = parameter.split("=");
+                System.out.println(Arrays.toString(headerValueSplit));
+                this.parameterList.put(headerValueSplit[0], headerValueSplit[1]);
+            }
+        }
+        return this.parameterList;
     }
 }

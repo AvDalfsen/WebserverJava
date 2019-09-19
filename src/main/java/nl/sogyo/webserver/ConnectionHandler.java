@@ -21,6 +21,8 @@ public class ConnectionHandler implements Runnable {
             // Set up a reader that can conveniently read our incoming bytes as lines of text.
             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             String line = null;
+            StringBuilder sB = new StringBuilder("");
+
             do {
                 // Read the incoming message line by line and echo is to the system out.
                 line = reader.readLine();
@@ -28,18 +30,33 @@ public class ConnectionHandler implements Runnable {
                 if(readerList.get(0) == null) return;
             } while (line != null && !line.isEmpty());
 
+            while(reader.ready()) {
+                char c = ((char) reader.read());
+                sB.append(c);
+            }
+            readerList.add(sB.toString());
+
             // Set up a writer that can write text to our binary output stream.
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             RequestInformation reqInf = new RequestInformation(readerList);
-            String content = (
-                    "<meta content=\"text/html;charset=utf-8\" http-equiv=\"Content-Type\">\n" +
+
+            sB.setLength(0);
+
+            sB.append("<meta content=\"text/html;charset=utf-8\" http-equiv=\"Content-Type\">\n" +
                     "<meta content=\"utf-8\" http-equiv=\"encoding\">\n" +
                     "<html>\n" +
                     "<body>\n" +
                     "You did an HTTP " + reqInf.getHTTPMethod() + " request.</br>" +
-                    "Requested resource: " + reqInf.getResourcePath() + "\n" +
-                    "</body>\n" +
-                    "</html>\n");
+                    "Requested resource: " + reqInf.getResourcePath() + "</br></br>The parameters of your request are:</br>");
+
+            for(Map.Entry<String,String> entry : reqInf.getParameterInformation().entrySet()){
+                sB.append(entry.getKey() + ": " + entry.getValue() + "</br>");
+            }
+
+            sB.append("\n</body>" +
+                    "</html>");
+
+            String content = sB.toString();
             ResponseInformation resInf = new ResponseInformation("OK", content);
             for(Map.Entry<String,String> entry : resInf.getCustomHeaders().entrySet()){
                 writer.write(entry.getKey() + " " + entry.getValue());
@@ -47,6 +64,12 @@ public class ConnectionHandler implements Runnable {
             }
             writer.newLine();
             writer.write(resInf.getContent());
+//
+//            for(Map.Entry<String,String> entry : reqInf.getParameterInformation().entrySet()){
+//                writer.write(entry.getKey() + " " + entry.getValue());
+//                writer.newLine();
+//            }
+
             writer.flush();
 
         } catch (IOException e) {
