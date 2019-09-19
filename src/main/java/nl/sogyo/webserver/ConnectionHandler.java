@@ -3,6 +3,7 @@ package nl.sogyo.webserver;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.*;
 
 public class ConnectionHandler implements Runnable {
     private Socket socket;
@@ -15,6 +16,7 @@ public class ConnectionHandler implements Runnable {
     /// instance of the connection handler class to a Thread.
     public void run() {
         try {
+            ArrayList<String> readerList = new ArrayList<>();
 
             // Set up a reader that can conveniently read our incoming bytes as lines of text.
             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -22,20 +24,40 @@ public class ConnectionHandler implements Runnable {
             do {
                 // Read the incoming message line by line and echo is to the system out.
                 line = reader.readLine();
-                System.out.println(line);
-            } while (!line.isEmpty());
-            
+                readerList.add(line);
+                if(readerList.get(0) == null) return;
+            } while (line != null && !line.isEmpty());
+
             // Set up a writer that can write text to our binary output stream.
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            // Write a simple hello world textual response to the client.
-            writer.write("Thank you for connecting!\r\n");
+            RequestInformation reqInf = new RequestInformation(readerList);
+            String content = (
+                    "<meta content=\"text/html;charset=utf-8\" http-equiv=\"Content-Type\">\n" +
+                    "<meta content=\"utf-8\" http-equiv=\"encoding\">\n" +
+                    "<html>\n" +
+                    "<body>\n" +
+                    "You did an HTTP " + reqInf.getHTTPMethod() + " request.</br>" +
+                    "Requested resource: " + reqInf.getResourcePath() + "\n" +
+                    "</body>\n" +
+                    "</html>\n");
+            ResponseInformation resInf = new ResponseInformation("OK", content);
+            for(Map.Entry<String,String> entry : resInf.getCustomHeaders().entrySet()){
+                writer.write(entry.getKey() + " " + entry.getValue());
+                writer.newLine();
+            }
+            writer.newLine();
+            writer.write(resInf.getContent());
             writer.flush();
 
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
             // After handling the request, we can close our socket.
-            socket.close();
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -51,7 +73,7 @@ public class ConnectionHandler implements Runnable {
             // the connection with our application logic. 
             while(true) {
                 // Wait for someone to connect. This call is blocking; i.e. our program is halted
-                // until someone connects to localhost:9090. A socker is a connection (a virtual
+                // until someone connects to localhost:9090. A socket is a connection (a virtual
                 // telephone line) between two endpoints - the client (browser) and the server (this).
                 Socket newConnection = socket.accept();
                 // We want to process our incoming call. Furthermore, we want to support multiple
@@ -61,7 +83,7 @@ public class ConnectionHandler implements Runnable {
                 // As our handling is in a background thread, we can accept new connections on the
                 // main thread (in the next iteration of the loop).
                 // Starting the thread is so-called fire and forget. The main thread starts a second
-                // thread and forgets about its existence. We recieve no feedback on whether the
+                // thread and forgets about its existence. We receive no feedback on whether the
                 // connection was handled gracefully.
                 Thread t = new Thread(new ConnectionHandler(newConnection));
                 t.start();
